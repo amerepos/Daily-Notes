@@ -52,17 +52,60 @@ const NoteComponent = () => {
   };
 
   const createNewNote = async () => {
-    await createNote(currentNote);
+    const noteData = new FormData();
+    noteData.append("title", currentNote.title);
+    noteData.append("description", currentNote.description);
+    if (audioBlob) {
+      noteData.append("audio", audioBlob, "recording.webm"); // or use another file extension based on your audio format
+    }
+
+    await createNote(noteData);
   };
 
   const updateExistingNote = async () => {
-    await updateNote(selectedNoteId, currentNote);
+    const noteData = new FormData();
+    noteData.append("title", currentNote.title);
+    noteData.append("description", currentNote.description);
+    if (audioBlob) {
+      noteData.append("audio", audioBlob, "recording.webm"); // or use another file extension based on your audio format
+    }
+
+    await updateNote(selectedNoteId, noteData);
   };
 
   const resetNoteForm = () => {
     setCurrentNote({ title: "", description: "" });
     setIsEditMode(false);
     setSelectedNoteId(null);
+  };
+
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const startRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+
+    recorder.ondataavailable = (event) => {
+      setAudioBlob(event.data);
+    };
+
+    recorder.start();
+    setMediaRecorder(recorder);
+    setIsRecording(true);
+  };
+
+  const stopRecording = () => {
+    mediaRecorder.stop();
+    setIsRecording(false);
+  };
+
+  const handleAudioPlayback = () => {
+    if (audioBlob) {
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    }
   };
 
   return (
@@ -101,6 +144,24 @@ const NoteComponent = () => {
                     rows="3"
                   />
                 </div>
+                {/* Recording controls */}
+                <div className="mb-3">
+                  <button
+                    type="button"
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={`btn ${isRecording ? "btn-danger" : "btn-success"} w-100 mb-2`}
+                  >
+                    {isRecording ? "Stop Recording" : "Start Recording"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAudioPlayback}
+                    className="btn btn-secondary w-100"
+                    disabled={!audioBlob}
+                  >
+                    Play Recording
+                  </button>
+                </div>
 
                 <button type="submit" className="btn btn-primary w-100 mb-4">
                   {isEditMode ? "Update Note" : "Add Note"}
@@ -119,6 +180,20 @@ const NoteComponent = () => {
                         <div>
                           <h4 className="h5 mb-1">{note.title}</h4>
                           <p className="mb-1 text-muted">{note.description}</p>
+                          {note.audio && (
+                            <button
+                              onClick={() => {
+                                const audioUrl = URL.createObjectURL(
+                                  note.audio,
+                                );
+                                const audio = new Audio(audioUrl);
+                                audio.play();
+                              }}
+                              className="btn btn-link"
+                            >
+                              Play Audio
+                            </button>
+                          )}
                         </div>
                         <div className="btn-group btn-group-sm">
                           <button

@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from .models import Note
 from .serializers import NoteSerializer
+from django.shortcuts import get_object_or_404
 
 
 class DailyNotesView(APIView):
@@ -26,7 +27,7 @@ class DailyNotesView(APIView):
         if pk:
             # Retrieve a single note
             try:
-                note = Note.objects.get(pk=pk, user=request.user)
+                note = get_object_or_404(Note, pk=pk, user=request.user)
                 serializer = NoteSerializer(note)
                 return Response(serializer.data)
             except Note.DoesNotExist:
